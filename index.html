@@ -104,6 +104,19 @@
             </div>
 
             <script>
+                // 1. 현재 접속한 주소가 로컬(내 컴퓨터)인지 확인합니다.
+                const isLocal = window.location.hostname === "localhost" ||
+                    window.location.hostname === "127.0.0.1" ||
+                    window.location.protocol === "file:";
+
+                // 2. 로컬 환경이 '아닐 때만' 깃허브 서버에 카운트를 요청하도록 설정합니다.
+                if (isLocal) {
+                    console.log("로컬 테스트 중이므로 Hits 카운터를 완전히 제거합니다.");
+                    // 로컬에서는 이미지 태그 자체를 삭제해서 hits.sh로 요청이 가는 걸 막습니다.
+                    document.getElementById("hit-counter").innerHTML = "🔧 로컬 테스트 중 (카운터 일시정지)";
+                }
+
+                // 3. 기존 주소창 뒤에 #hits 붙였을 때 관리자용으로 보여주는 기능
                 if (window.location.hash === "#hits") {
                     document.getElementById("hit-counter").style.display = "block";
                 }
