@@ -147,10 +147,17 @@ function showDetail(setId, element) {
             html += `<h4 style="font-size: 1rem; margin: 18px 0 8px 0; font-weight: 600; color: var(--text); display: flex; align-items: center;">
             ▪ 필요 제작 재료 ${craftRateText}
               </h4>
-             <div class="mat-list">`;
+             <!-- 💡 flex-direction을 row로 바꾸고 flex-wrap: wrap을 주어 화면 크기에 맞춰 자동 정렬되게 만듭니다 -->
+             <div class="mat-list" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 12px 20px; width: 100%; background: none !important; border: none !important; padding: 0 !important; margin-bottom: 15px;">`;
 
             rune.materials.forEach(mat => {
-                html += `<div class="mat-item"><img src="${mat.img}"> <span>${mat.name} x ${mat.count}</span></div>`;
+                html += `
+                    <!-- 💡 min-width를 주어 PC에서는 가로로 배치되되 아이템끼리 너무 달라붙지 않게 조절합니다 -->
+                    <div class="mat-item" style="display: flex; align-items: center; gap: 10px; min-width: 160px; background: none !important; border: none !important; padding: 0 !important; box-shadow: none !important;">
+                        <img src="${mat.img}" style="width: 42px; height: 42px; object-fit: contain; border: 1px solid var(--border); border-radius: 4px; padding: 2px; background: rgba(0,0,0,0.02); flex-shrink: 0;"> 
+                        <span style="font-size: 0.95rem; color: var(--text); white-space: nowrap;">${mat.name} x ${mat.count}</span>
+                    </div>
+                `;
             });
             html += `</div>`;
         }
@@ -281,7 +288,7 @@ function runSimulation() {
     html += `</ul>`;
 
     if (rune.skill_info && rune.skill_info.has_skill) {
-        html += `<h4 style="font-size: 1rem; margin-top: 15px; margin-bottom: 6px;">▪ 부여된 각성 스킬</h4>`;
+        html += `<h4 style="font-size: 1rem; margin-top: 15px; margin-bottom: 6px;">▪ 부여된 스킬</h4>`;
         const dice = Math.random() * 100;
         let currentWeight = 0;
         let selectedLv = rune.skill_info.levels[0];
@@ -295,7 +302,7 @@ function runSimulation() {
         }
 
         html += `<p style="margin: 4px 0 0 4px; font-size: 0.95rem;">
-            <b>[${rune.skill_info.skill_name} Lv.${selectedLv.level}]</b> 획득에 성공했습니다. <span style="color: gray; font-size: 0.85rem;">(확률: ${selectedLv.rate}%)</span>
+            <b>[${rune.skill_info.skill_name} Lv.${selectedLv.level}]</b> <span style="color: gray; font-size: 0.85rem;">(확률: ${selectedLv.rate}%)</span>
         </p>`;
     }
 
