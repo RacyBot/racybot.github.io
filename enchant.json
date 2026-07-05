@@ -160,10 +160,10 @@
     "success_rate": 100,
     "cost": "룬스톤 2,000개",
     "items": [
-      { "item_name": "초월의 검", "item_image": "images/enchant/e5-item-4.png" },
-      { "item_name": "초월의 지팡이", "item_image": "images/enchant/e5-item-a.png" },
-      { "item_name": "뒤틀린 초월의 검", "item_image": "images/enchant/e5-item-b.png" },
-      { "item_name": "홍염의 지팡이", "item_image": "images/enchant/e5-item-c.png" }
+      { "item_name": "초월의 검", "item_image": "images/enchant/e5-item-a.png" },
+      { "item_name": "초월의 지팡이", "item_image": "images/enchant/e5-item-b.png" },
+      { "item_name": "뒤틀린 초월의 검", "item_image": "images/enchant/e5-item-c.png" },
+      { "item_name": "홍염의 지팡이", "item_image": "images/enchant/e5-item-d.png" }
     ],
     "materials": [
       { "name": "봉인된 초월의 룬", "img": "images/enchant/e5-ing1.png", "count": 1 },
