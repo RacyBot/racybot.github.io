@@ -1843,3 +1843,9 @@ body.dark-mode .sim-skill-desc-box {
 body.dark-mode .sim-result-card {
     background: rgba(255,255,255,0.02);
 }
+
+.action-btn:active {
+    transform: scale(0.99); /* 누를 때 살짝 줄어듦 */
+    background-color: var(--primary); /* 약간 더 진해짐 */
+    transition: transform 0.1s;
+}
