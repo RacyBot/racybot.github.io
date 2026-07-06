@@ -217,8 +217,7 @@ function initSimulatorOptions() {
 
 // 대상 아이템 변경 시 횟수 초기화 기능 포함
 function initSimulator() {
-    globalTryCount = 0; // 💡 다른 아이템으로 바꿀 때 시도 횟수를 리셋해 줍니다.
-
+    globalTryCount = 0; 
     const select = document.getElementById("sim-target-select");
     if (!select || !select.value) return;
 
@@ -229,19 +228,28 @@ function initSimulator() {
     const matDisplay = document.getElementById("sim-materials-display");
     if (!matDisplay) return;
 
-    if (!rune || !rune.materials || rune.materials.length === 0) {
-        matDisplay.innerHTML = "<p style='color:gray; padding:10px;'>이 룬은 다이렉트 제작 재료가 없는 특수 파생 룬입니다.</p>";
-        return;
-    }
-
-    let html = `<p><b>소모 비용:</b> ${rune.cost}</p><div class="mat-list">`;
-    rune.materials.forEach(mat => {
-        html += `<div class="mat-item"><img src="${mat.img}"> <span>${mat.name} x ${mat.count}</span></div>`;
+    // 💡 배경색(background)을 아예 제거하고, 테두리(border)로만 구역을 구분하여 다크모드/라이트모드 상관없이 100% 보이게 합니다.
+    let html = `
+        <div style="border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 1rem; color: var(--text); border-left: 4px solid var(--primary); padding-left: 10px;">
+                인챈트 옵션 범위
+            </h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <tbody>`;
+    
+    rune.stats.forEach(st => {
+        html += `
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 8px 0; font-weight: 600; color: var(--secondary);">${st.stat_name}</td>
+                <td style="padding: 8px 0; text-align: right; color: var(--text);">${st.min.toLocaleString()}${st.unit} ~ ${st.max.toLocaleString()}${st.unit}</td>
+            </tr>`;
     });
-    html += `</div>`;
+    
+    html += `   </tbody>
+            </table>
+        </div>`;
     matDisplay.innerHTML = html;
 
-    // 결과 로그 구역 안내 텍스트도 초기화
     const resultDisplay = document.getElementById("sim-result-display");
     if (resultDisplay) {
         resultDisplay.innerHTML = `<p class="placeholder-text" style="color: gray; font-size: 0.95rem;">인챈트 버튼을 누르면 랜덤 옵션 결과가 표시됩니다.</p>`;
@@ -279,10 +287,32 @@ function runSimulation() {
     `;
 
     html += `<h4 style="font-size: 1rem; margin: 12px 0 6px 0;">▪ 부여된 인챈트 옵션</h4><ul style="padding-left: 15px; margin: 0; line-height: 1.6;">`;
+    // 💡 runSimulation 함수 내 st.stats.forEach 루프 안쪽을 이렇게 수정하세요
     rune.stats.forEach(st => {
-        // 💡 .toFixed(1) 소수점 연산을 완전히 빼버리고 Math.floor와 쉼표 표시(toLocaleString)로 정수형 포맷 고정
-        const randomStat = Math.floor(Math.random() * (st.max - st.min + 1) + st.min);
-        const finalVal = randomStat.toLocaleString();
+        let finalVal;
+
+        // 💡 '공격력' 옵션일 경우에만 자리수 제한 로직 적용
+        if (st.stat_name === "공격력") {
+            let step = 1;
+            // 드래곤슬레이어(id: 4)는 1000 단위, 세반(id: 2)은 100 단위 적용 예시
+            // set.id는 상단에서 이미 정의되어 있습니다.
+            if (set.id === 4) { // 드래곤슬레이어
+                step = 1000;
+            } else if (set.id === 2) { // 세계의 반지(세반)
+                step = 100;
+            }
+
+            // 해당 step 단위로 랜덤값 생성
+            const minStep = Math.ceil(st.min / step);
+            const maxStep = Math.floor(st.max / step);
+            const randomStep = Math.floor(Math.random() * (maxStep - minStep + 1) + minStep);
+            finalVal = (randomStep * step).toLocaleString();
+        } else {
+            // 나머지는 기존처럼 일반 랜덤
+            const randomStat = Math.floor(Math.random() * (st.max - st.min + 1) + st.min);
+            finalVal = randomStat.toLocaleString();
+        }
+
         html += `<li><b>${st.stat_name} :</b> ${highlightText(finalVal + st.unit)}</li>`;
     });
     html += `</ul>`;
