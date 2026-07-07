@@ -217,7 +217,7 @@ function initSimulatorOptions() {
 
 // 대상 아이템 변경 시 횟수 초기화 기능 포함
 function initSimulator() {
-    globalTryCount = 0; 
+    globalTryCount = 0;
     const select = document.getElementById("sim-target-select");
     if (!select || !select.value) return;
 
@@ -236,7 +236,7 @@ function initSimulator() {
             </h4>
             <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                 <tbody>`;
-    
+
     rune.stats.forEach(st => {
         html += `
             <tr style="border-bottom: 1px solid var(--border);">
@@ -244,7 +244,7 @@ function initSimulator() {
                 <td style="padding: 8px 0; text-align: right; color: var(--text);">${st.min.toLocaleString()}${st.unit} ~ ${st.max.toLocaleString()}${st.unit}</td>
             </tr>`;
     });
-    
+
     html += `   </tbody>
             </table>
         </div>`;
@@ -254,6 +254,36 @@ function initSimulator() {
     if (resultDisplay) {
         resultDisplay.innerHTML = `<p class="placeholder-text" style="color: gray; font-size: 0.95rem;">인챈트 버튼을 누르면 랜덤 옵션 결과가 표시됩니다.</p>`;
     }
+}
+
+// 페이지 로드 시 JSON 데이터 불러오기 및 리스너 등록
+document.addEventListener("DOMContentLoaded", () => {
+    fetch("./enchant.json")
+        .then(res => res.json())
+        .then(data => {
+            enchantData = data;
+            renderAll();
+            initToggleListener(); // 💡 실시간 토글 리스너 함수 호출
+        })
+        .catch(err => console.error("데이터 로드 실패:", err));
+});
+
+// 💡 실시간 스위칭을 위한 토글 리스너 추가
+function initToggleListener() {
+    const toggle = document.getElementById("sim-effect-toggle");
+    if (!toggle) return;
+
+    toggle.addEventListener("change", () => {
+        const resultDisplay = document.getElementById("sim-result-display");
+        if (!resultDisplay) return;
+
+        // 사용자가 언제든 스위치를 켜고 끌 때 클래스를 즉시 반영합니다.
+        if (toggle.checked) {
+            resultDisplay.classList.add("effects-on");
+        } else {
+            resultDisplay.classList.remove("effects-on");
+        }
+    });
 }
 
 function runSimulation() {
@@ -267,9 +297,9 @@ function runSimulation() {
 
     if (!rune) return;
 
-    globalTryCount++; // 누적 횟수 증가
+    globalTryCount++;
 
-    // 누적 시도 횟수 및 초기화 버튼 UI
+    // 💡 주입하던 <style> 코드는 완전히 들어내고 순수 HTML 레이아웃만 남깁니다.
     let html = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
             <h2 style="font-size: 1.3rem; margin: 0; color: var(--text);">인챈트 결과</h2>
@@ -287,38 +317,62 @@ function runSimulation() {
     `;
 
     html += `<h4 style="font-size: 1rem; margin: 12px 0 6px 0;">▪ 부여된 인챈트 옵션</h4><ul style="padding-left: 15px; margin: 0; line-height: 1.6;">`;
-    // 💡 runSimulation 함수 내 st.stats.forEach 루프 안쪽을 이렇게 수정하세요
-    rune.stats.forEach(st => {
-        let finalVal;
 
-        // 💡 '공격력' 옵션일 경우에만 자리수 제한 로직 적용
+    let isJackpot = true;
+    let hasStatsOrSkill = false;
+
+    // 1. 스탯 옵션 계산
+    rune.stats.forEach(st => {
+        hasStatsOrSkill = true;
+        let finalValNum = 0;
+        let score = 0;
+
         if (st.stat_name === "공격력") {
             let step = 1;
-            // 드래곤슬레이어(id: 4)는 1000 단위, 세반(id: 2)은 100 단위 적용 예시
-            // set.id는 상단에서 이미 정의되어 있습니다.
-            if (set.id === 4) { // 드래곤슬레이어
-                step = 1000;
-            } else if (set.id === 2) { // 세계의 반지(세반)
-                step = 100;
-            }
+            if (set.id === 4) step = 1000;
+            else if (set.id === 2) step = 100;
 
-            // 해당 step 단위로 랜덤값 생성
             const minStep = Math.ceil(st.min / step);
             const maxStep = Math.floor(st.max / step);
             const randomStep = Math.floor(Math.random() * (maxStep - minStep + 1) + minStep);
-            finalVal = (randomStep * step).toLocaleString();
+            finalValNum = randomStep * step;
+
+            if (maxStep === minStep) score = 100;
+            else score = Math.floor(((randomStep - minStep) / (maxStep - minStep)) * 100);
         } else {
-            // 나머지는 기존처럼 일반 랜덤
-            const randomStat = Math.floor(Math.random() * (st.max - st.min + 1) + st.min);
-            finalVal = randomStat.toLocaleString();
+            finalValNum = Math.floor(Math.random() * (st.max - st.min + 1) + st.min);
+            if (st.max === st.min) score = 100;
+            else score = Math.floor(((finalValNum - st.min) / (st.max - st.min)) * 100);
         }
 
-        html += `<li><b>${st.stat_name} :</b> ${highlightText(finalVal + st.unit)}</li>`;
+        let effClass = "";
+        if (score === 100) {
+            effClass = "eff-max";
+        } else if (score >= 90) {
+            effClass = "eff-red";
+        } else if (score >= 80) {
+            effClass = "eff-green";
+        }
+
+        // 👑 잭팟 판정: 90% 미만(초록색 이하)이 하나라도 나오면 잭팟 탈락!
+        if (score < 90) {
+            isJackpot = false;
+        }
+
+        let displayVal = highlightText(finalValNum.toLocaleString() + st.unit);
+        if (effClass !== "") {
+            displayVal = `<span class="${effClass}">${displayVal}</span>`;
+        }
+
+        html += `<li><b>${st.stat_name} :</b> ${displayVal}</li>`;
     });
     html += `</ul>`;
 
+    // 2. 스킬 옵션 계산
     if (rune.skill_info && rune.skill_info.has_skill) {
+        hasStatsOrSkill = true;
         html += `<h4 style="font-size: 1rem; margin-top: 15px; margin-bottom: 6px;">▪ 부여된 스킬</h4>`;
+
         const dice = Math.random() * 100;
         let currentWeight = 0;
         let selectedLv = rune.skill_info.levels[0];
@@ -331,12 +385,38 @@ function runSimulation() {
             }
         }
 
+        let skillEffClass = "";
+        if (selectedLv.level === 3) {
+            skillEffClass = "eff-max";
+        } else {
+            isJackpot = false;
+        }
+
+        let skillText = `[${rune.skill_info.skill_name} Lv.${selectedLv.level}]`;
+        if (skillEffClass !== "") {
+            skillText = `<span class="${skillEffClass}">${skillText}</span>`;
+        }
+
         html += `<p style="margin: 4px 0 0 4px; font-size: 0.95rem;">
-            <b>[${rune.skill_info.skill_name} Lv.${selectedLv.level}]</b> <span style="color: gray; font-size: 0.85rem;">(확률: ${selectedLv.rate}%)</span>
+            <b>${skillText}</b> <span style="color: gray; font-size: 0.85rem;">(확률: ${selectedLv.rate}%)</span>
         </p>`;
     }
 
+    // 3. 잭팟 클래스 판단 및 적용
+    if (isJackpot && hasStatsOrSkill) {
+        resultDisplay.classList.add("eff-jackpot");
+    } else {
+        resultDisplay.classList.remove("eff-jackpot");
+    }
+
     resultDisplay.innerHTML = html;
+
+    // 4. 인챈트 실행 직후에도 현재 스위치 상태를 반영해 줍니다.
+    if (document.getElementById("sim-effect-toggle").checked) {
+        resultDisplay.classList.add("effects-on");
+    } else {
+        resultDisplay.classList.remove("effects-on");
+    }
 }
 
 // 💡 버튼을 눌렀을 때 횟수를 0으로 밀고 결과창을 초기 상태로 돌려놓는 함수 추가
